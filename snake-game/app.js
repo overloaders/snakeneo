@@ -553,14 +553,17 @@
     const playerName = (elPlayerName && elPlayerName.value.trim()) ? elPlayerName.value.trim() : 'Pemain';
     try { localStorage.setItem('snake_neo_name', playerName); } catch (e) {}
 
-    await apiPostScores({
+    const saved = await apiPostScores({
       name: playerName,
       score: score,
       diff: currentDiff,
       date: new Date().toISOString(),
     });
+    if (!saved || !saved.ok) {
+      throw new Error('Gagal menyimpan skor ke server');
+    }
 
-    // Sembunyikan tombol setelah menyimpan mencegah spam pengiriman berulang
+    // Sembunyikan tombol setelah menyimpan berhasil mencegah spam
     if (btnSaveScore) btnSaveScore.style.display = 'none';
 
     // Simpan personal best per difficulty ke localStorage
@@ -781,7 +784,16 @@
       btnSaveScore.style.display = 'none';
       btnSaveScore.disabled = true;
     }
-    await saveScore();
+    try {
+      await saveScore();
+    } catch (err) {
+      // Jika simpan gagal (jaringan error, server 500, dll),
+      // tunjukkan dan aktifkan kembali tombol agar pemain bisa coba ulang
+      if (btnSaveScore) {
+        btnSaveScore.style.display = '';
+        btnSaveScore.disabled = false;
+      }
+    }
   });
 
   if (btnShareScore) {
