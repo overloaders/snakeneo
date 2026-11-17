@@ -534,6 +534,9 @@
     flashEl.classList.add('active');
     setTimeout(() => flashEl.classList.remove('active'), 180);
 
+    // Tampilkan kembali tombol simpan untuk sesi game over baru
+    if (btnSaveScore) btnSaveScore.style.display = '';
+
     if (score > highScore) {
       highScore = score;
       elMenuBest.textContent = highScore;
@@ -556,6 +559,9 @@
       diff: currentDiff,
       date: new Date().toISOString(),
     });
+
+    // Sembunyikan tombol setelah menyimpan mencegah spam pengiriman berulang
+    if (btnSaveScore) btnSaveScore.style.display = 'none';
 
     // Simpan personal best per difficulty ke localStorage
     try {
