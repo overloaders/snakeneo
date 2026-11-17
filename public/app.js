@@ -776,6 +776,11 @@
   btnMenu.addEventListener('click', (e) => { e.preventDefault(); showScreen(screenMenu); overlayGameOver.classList.add('hidden'); });
   btnSaveScore.addEventListener('click', async (e) => {
     e.preventDefault();
+    // Nonaktifkan segera mencegah double-click / spam saat proses async
+    if (btnSaveScore) {
+      btnSaveScore.style.display = 'none';
+      btnSaveScore.disabled = true;
+    }
     await saveScore();
   });
 
