@@ -128,6 +128,50 @@
   let accumulator = 0;
   let lastSaveTime = 0;
   const SAVE_INTERVAL = 3000; // simpan state setiap 3 detik
+  const OFFLINE_QUEUE_KEY = 'snake_neo_offline_queue';
+
+  // ---------- Antrian skor offline ----------
+  function bacaAntrianOffline() {
+    try {
+      const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+
+  function simpanAntrianOffline(antrian) {
+    try { localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(antrian)); } catch (e) {}
+  }
+
+  function masukkanAntrianOffline(entry) {
+    const antrian = bacaAntrianOffline();
+    antrian.push(entry);
+    simpanAntrianOffline(antrian);
+  }
+
+  async function sinkronkanAntrianOffline() {
+    if (!navigator.onLine) return;
+    const antrian = bacaAntrianOffline();
+    if (antrian.length === 0) return;
+    const tersisa = [];
+    for (const entry of antrian) {
+      try {
+        const res = await fetch('/api/scores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(entry),
+        });
+        if (!res.ok) {
+          tersisa.push(entry);
+          continue;
+        }
+        await res.json();
+      } catch (e) {
+        tersisa.push(entry);
+      }
+    }
+    simpanAntrianOffline(tersisa);
+    await loadHistoryFromDB();
+  }
 
   // ---------- Gamepad ----------
   const GAMEPAD_DEADZONE = 0.3;
@@ -372,6 +416,7 @@
   }
 
   await loadHistoryFromDB();
+  await sinkronkanAntrianOffline();
 
   // Coba restore state game yang tersimpan
   const btnResumeSaved = document.getElementById('btn-resume-saved');
@@ -553,13 +598,17 @@
     const playerName = (elPlayerName && elPlayerName.value.trim()) ? elPlayerName.value.trim() : 'Pemain';
     try { localStorage.setItem('snake_neo_name', playerName); } catch (e) {}
 
-    const saved = await apiPostScores({
+    const entry = {
       name: playerName,
       score: score,
       diff: currentDiff,
       date: new Date().toISOString(),
-    });
+    };
+
+    const saved = await apiPostScores(entry);
     if (!saved || !saved.ok) {
+      // Simpan ke antrian offline agar tidak hilang saat jaringan putus
+      masukkanAntrianOffline(entry);
       throw new Error('Gagal menyimpan skor ke server');
     }
 
@@ -825,6 +874,9 @@
     btns.forEach(b => b.classList.toggle('active', b.dataset.diff === diff));
     await loadLeaderboardByDiff(diff);
   };
+
+  // Sinkronkan antrian offline saat kembali online
+  window.addEventListener('online', sinkronkanAntrianOffline);
 
   showScreen(screenMenu);
 })();
