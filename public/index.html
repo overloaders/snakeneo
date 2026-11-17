@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0b1220">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Snake Neo">
+<link rel="manifest" href="site.webmanifest">
+<title>Snake Neo — Modern Snake for Android</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a href="#gameCanvas" class="skip-link">Langsung ke permainan</a>
+
+  <!-- Layar awal / menu -->
+  <div id="menu" class="screen active" role="region" aria-label="Menu utama">
+    <div class="card">
+      <div class="logo">SNAKE<span>NEO</span></div>
+      <p class="tagline">Modern Snake untuk Android</p>
+
+      <div class="diff-select">
+        <span class="diff-label">Tingkat Kesulitan</span>
+        <button class="diff-btn active" data-diff="medium">Sedang</button>
+        <button class="diff-btn" data-diff="easy">Mudah</button>
+        <button class="diff-btn" data-diff="hard">Sulit</button>
+      </div>
+
+      <label class="sound-toggle" aria-label="Aktifkan/nonaktifkan suara">
+        <input type="checkbox" id="sound-toggle" checked aria-checked="true">
+        <span class="toggle-slider"></span>
+        <span class="toggle-text">Suara</span>
+      </label>
+
+      <label class="sound-toggle" aria-label="Aktifkan/nonaktifkan mode gelap" style="margin-top:12px;">
+        <input type="checkbox" id="dark-mode-toggle" aria-checked="false">
+        <span class="toggle-slider"></span>
+        <span class="toggle-text">Mode Gelap</span>
+      </label>
+
+      <div class="theme-select">
+        <span class="theme-label">Warna Ular</span>
+        <button class="theme-btn active" data-theme="hijau">🟢 Hijau</button>
+        <button class="theme-btn" data-theme="biru">🔵 Biru</button>
+        <button class="theme-btn" data-theme="ungu">🟣 Ungu</button>
+        <button class="theme-btn" data-theme="merah">🔴 Merah</button>
+        <button class="theme-btn" data-theme="kuning">🟡 Kuning</button>
+      </div>
+
+      <div class="best">High Score: <span id="menu-best">0</span></div>
+      <div class="pb-scores" style="margin-top:14px; font-size:13px; color:#94a3b8;">
+        <span style="margin-right:16px;">PB Mudah: <span id="pb-easy" style="color:#e8eaf2;font-weight:700;">0</span></span>
+        <span style="margin-right:16px;">PB Sedang: <span id="pb-medium" style="color:#e8eaf2;font-weight:700;">0</span></span>
+        <span>PB Sulit: <span id="pb-hard" style="color:#e8eaf2;font-weight:700;">0</span></span>
+      </div>
+      <button id="btn-start" class="btn btn-primary btn-large" aria-label="Mulai bermain snake">Mulai Bermain</button>
+      <button id="btn-resume-saved" class="btn btn-ghost" style="margin-top:10px;" aria-label="Lanjutkan permainan yang disimpan">Lanjutkan Tersimpan</button>
+      <button id="btn-leaderboard" class="btn btn-ghost" style="margin-top:10px;" aria-label="Buka papan peringkat">Papan Peringkat</button>
+      <div class="controls-hint">
+        Geser layar atau tekan panah untuk gerak
+      </div>
+    </div>
+  </div>
+
+  <!-- Layar papan peringkat -->
+  <div id="leaderboard" class="screen" role="region" aria-label="Papan peringkat">
+    <header class="hud">
+      <button id="btn-leaderboard-back" class="btn btn-ghost">← Kembali</button>
+      <div class="hud-item"><span class="hud-label">Papan</span><div id="lb-title">Peringkat</div></div>
+    </header>
+
+    <div class="diff-select" style="margin: 16px 0 0;">
+      <button class="diff-btn active" data-diff="medium" onclick="window.__setLbDiff('medium')">Sedang</button>
+      <button class="diff-btn" data-diff="easy" onclick="window.__setLbDiff('easy')">Mudah</button>
+      <button class="diff-btn" data-diff="hard" onclick="window.__setLbDiff('hard')">Sulit</button>
+    </div>
+
+    <div class="card" style="width: min(92vw, 420px); padding: 26px 22px;">
+      <div class="top-scores" style="margin-bottom: 18px;">
+        <div class="label">10 Skor Tertinggi</div>
+        <ol id="leaderboard-list"></ol>
+      </div>
+      <div class="history-scores" style="max-height: 320px;">
+        <div class="label">Riwayat Lengkap</div>
+        <ol id="leaderboard-history"></ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- Layar utama permainan -->
+  <div id="game" class="screen" role="region" aria-label="Layar permainan">
+    <header class="hud">
+      <div class="hud-item"><span class="hud-label">Skor</span><div id="score">0</div></div>
+      <div class="hud-item"><span class="hud-label">Tinggi</span><div id="high">0</div></div>
+      <div class="hud-item"><span class="hud-label">Panjang</span><div id="length">3</div></div>
+      <div class="hud-item hud-diff"><span class="hud-label">Tingkat</span><div id="diff-badge">Sedang</div></div>
+      <button id="btn-pause" class="btn btn-ghost" aria-label="Jeda permainan">Jeda</button>
+      <div class="hud-item hud-sound" id="sound-indicator" aria-hidden="true">🔊</div>
+    </header>
+
+    <div class="stage">
+      <canvas id="gameCanvas" width="400" height="400"></canvas>
+      <div id="overlay-pause" class="overlay hidden">
+        <div class="overlay-card">
+          <h2>Dijeda</h2>
+          <button id="btn-resume" class="btn btn-primary">Lanjutkan</button>
+        </div>
+      </div>
+      <div id="overlay-gameover" class="overlay hidden">
+        <div class="overlay-card">
+          <h2>Game Over</h2>
+          <div class="result">
+            <div><span class="label">Skor Akhir</span><span id="final-score">0</span></div>
+            <div><span class="label">High Score</span><span id="final-high">0</span></div>
+          </div>
+          <div class="top-scores">
+            <div class="label">5 Terbaik</div>
+            <ol id="top-scores-list"></ol>
+          </div>
+
+          <div class="name-input">
+            <label for="player-name">Nama Pemain</label>
+            <input type="text" id="player-name" maxlength="20" value="Pemain" placeholder="Nama Anda" aria-label="Nama pemain">
+            <button id="btn-save-score" class="btn btn-primary" style="width:100%;margin-top:10px;" aria-label="Simpan skor">Simpan Skor</button>
+            <button id="btn-share-score" class="btn btn-ghost" style="width:100%;margin-top:8px;" aria-label="Bagikan skor">Bagikan Skor</button>
+          </div>
+
+          <div class="history-scores">
+            <div class="label">Riwayat Semua</div>
+            <ol id="history-list"></ol>
+          </div>
+
+          <div class="btn-row">
+            <button id="btn-restart" class="btn btn-primary btn-large" aria-label="Main lagi">Main Lagi</button>
+            <button id="btn-menu" class="btn btn-ghost" aria-label="Kembali ke menu">Menu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- D-pad sentuh untuk Android -->
+    <div class="dpad">
+      <button class="dpad-btn dpad-up" data-dir="up">&#9650;</button>
+      <div class="dpad-row">
+        <button class="dpad-btn dpad-left" data-dir="left">&#9664;</button>
+        <button class="dpad-btn dpad-down" data-dir="down">&#9660;</button>
+        <button class="dpad-btn dpad-right" data-dir="right">&#9654;</button>
+      </div>
+    </div>
+  </div>
+
+<script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>
