@@ -144,6 +144,12 @@
 
   function masukkanAntrianOffline(entry) {
     const antrian = bacaAntrianOffline();
+    const duplikat = antrian.some(e =>
+      e.name === entry.name &&
+      e.score === entry.score &&
+      e.diff === entry.diff
+    );
+    if (duplikat) return;
     antrian.push(entry);
     simpanAntrianOffline(antrian);
   }
